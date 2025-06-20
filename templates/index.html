@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Predizione del Diabete</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+  <style>
+    :root {
+        --bs-primary: #28a745;
+    }
+
+    label {
+        user-select: none;
+    }
+
+    /* Personalized Swal */
+    .swal-loading {
+        font-size: 2.5em;
+    }
+
+    .swal-loading .swal2-html-container {
+        padding: 0.5em;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script>
+    function showLoadingSwal() {
+        Swal.fire({
+            width: "5em",
+            padding: "1.25em",
+            customClass: "swal-loading",
+            heightAuto: false,
+            // html: `<i class="fa-duotone fa-solid fa-loader fa-spin-pulse" style="--fa-primary-opacity: 0.4; --fa-secondary-opacity: 1; color: black;"></i>`,
+            html: `<i class="fa-solid fa-spinner fa-spin-pulse"></i>`,
+            showConfirmButton: false,
+            showCancelButton: false,
+            showCloseButton: false,
+            allowOutsideClick: false,
+            allowEscapeKey: false
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const bmiCalcLink = document.querySelector('a.link-success');
+        if (bmiCalcLink) {
+            bmiCalcLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            Swal.fire({
+                title: 'Calcolo del BMI',
+                html:
+                '<input id="swal-weight" class="swal2-input" placeholder="Peso (kg)">' +
+                '<input id="swal-height" class="swal2-input" placeholder="Altezza (cm)">',
+                focusConfirm: false,
+                showCancelButton: true,
+                confirmButtonText: 'Calcola',
+                preConfirm: () => {
+                const weight = parseFloat(document.getElementById('swal-weight').value);
+                const height = parseFloat(document.getElementById('swal-height').value);
+                if (!weight || weight <= 0) {
+                    Swal.showValidationMessage('Per favore inserisci un peso valido (>0)');
+                }
+                if (!height || height <= 0) {
+                    Swal.showValidationMessage('Per favore inserisci un\'altezza valida (>0)');
+                }
+                return { weight, height };
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                const { weight, height } = result.value;
+                const bmiValue = weight / ((height / 100) ** 2);
+                document.getElementById('bmi').value = parseFloat(bmiValue.toFixed(2));
+                }
+            });
+            });
+        }
+
+        const form = document.querySelector('form');
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const showError = (message) => {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Errore',
+                    text: message
+                });
+            };
+            const getRadioValue = (name) => {
+            const el = document.querySelector(`input[name="${name}"]:checked`);
+                return el ? el.value : null;
+            };
+            const gender      = getRadioValue('gender');
+            const age         = document.getElementById('age').value;
+            const bmiRaw      = document.getElementById('bmi').value;
+            const bmi         = parseFloat(bmiRaw);
+            const high_col    = getRadioValue('high_col');
+            const col_check   = getRadioValue('col_check');
+            const smoke       = getRadioValue('smoke');
+            const heart_dis   = getRadioValue('heart_dis');
+            const fruits      = getRadioValue('fruits');
+            const veggies     = getRadioValue('veggies');
+            const alchool     = getRadioValue('alchool');
+            const gen_health  = document.getElementById('gen_health').value;
+            const illenesRaw  = document.getElementById('illenes').value;
+            const illenes     = parseInt(illenesRaw, 10);
+            const walk_diff   = getRadioValue('walk_diff');
+            const high_press  = getRadioValue('high_press');
+            if (!gender)        return showError('Seleziona il genere');
+            if (!age)           return showError('Seleziona l\'età');
+            if (!bmiRaw || isNaN(bmi) || bmi <= 0) return showError('Inserisci un BMI valido (>0)');
+            if (!high_col)      return showError('Specifica se hai il colesterolo alto');
+            if (!col_check)     return showError('Specifica se hai controllato il colesterolo');
+            if (!smoke)         return showError('Specifica la storia di fumo');
+            if (!heart_dis)     return showError('Specifica se hai malattie cardiache');
+            if (!fruits)        return showError('Specifica il consumo di frutta');
+            if (!veggies)       return showError('Specifica il consumo di verdura');
+            if (!alchool)       return showError('Specifica il consumo di alcolici');
+            if (!gen_health)    return showError('Seleziona il livello di salute generale');
+            if (!illenesRaw || isNaN(illenes) || illenes < 0 || illenes > 30) 
+                                return showError('Inserisci giorni di malattia tra 0 e 30');
+            if (!walk_diff)     return showError('Specifica le difficoltà di camminata');
+            if (!high_press)    return showError('Specifica se hai la pressione alta');
+
+            const formData = {
+                gender,
+                age,
+                bmi,
+                high_col,
+                col_check,
+                smoke,
+                heart_dis,
+                fruits,
+                veggies,
+                alchool,
+                gen_health,
+                illenes,
+                walk_diff,
+                high_press
+            };
+
+            console.log('Dati raccolti:', formData);
+            
+            const params = new URLSearchParams({
+                age: formData.age,
+                sex: formData.gender,
+                hchol: formData.high_col,
+                cholck: formData.col_check,
+                bmi: formData.bmi,
+                smoke: formData.smoke,
+                heartdis: formData.heart_dis,
+                F: formData.fruits,
+                V: formData.veggies,
+                alchool: formData.alchool,
+                genheal: formData.gen_health,
+                physill: formData.illenes,
+                diffwalk: formData.walk_diff,
+                highbp: formData.high_press
+            });
+
+            showLoadingSwal();
+
+            fetch(`http://127.0.0.1:5000/predict?${params.toString()}`, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'text/plain'
+                }
+            })
+            .then(response => {
+                if (!response.ok) throw new Error(`Errore HTTP ${response.status}`);
+                return response.text();
+            })
+            .then(text => {
+                console.log('Risposta dal server:', text);
+                Swal.close();
+                if (text === "error") {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Errore Sconosciuto!',
+                        text: 'Errore durante la predizione!'
+                    });
+                } else {
+                    Swal.fire({
+                        title: 'Risultato Predizione',
+                        text: text === 'diabetes' ? 'Sei a rischio di Diabete!' : 'Non sei a rischio di Diabete!',
+                        icon: text === 'diabetes' ? 'warning' : 'success'
+                    });
+                }
+            })
+            .catch(err => {
+                console.error('Fetch error:', err);
+                Swal.close();
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Errore!',
+                    text: 'Errore del Server!'
+                });
+            });
+
+        });
+    });
+  </script>
+</head>
+<body class="bg-light text-dark">
+  <div class="container py-5">
+    <div class="card shadow border-success">
+      <div class="card-header bg-success text-white">
+        <h1 class="fs-3 mb-0">Predizione del Diabete</h1>
+      </div>
+      <div class="card-body">
+        <form action="#" method="get">
+          <fieldset>
+            <legend class="h5 mb-4">Compila il form e scopri se sei a rischio diabete</legend>
+
+            <!-- Genere -->
+            <div class="mb-3">
+              <label class="form-label">Genere:</label><br>
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="gender" id="male" value="1">
+                <label class="form-check-label" for="male">Maschio</label>
+              </div>
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="gender" id="female" value="0">
+                <label class="form-check-label" for="female">Femmina</label>
+              </div>
+            </div>
+
+            <!-- Età -->
+            <div class="mb-3">
+              <label for="age" class="form-label">Età:</label>
+              <select class="form-select" name="age" id="age" required>
+                <option value="" selected disabled>Seleziona età</option>
+                <option value="1">18 - 24</option>
+                <option value="2">25 - 29</option>
+                <option value="3">30 - 34</option>
+                <option value="4">35 - 39</option>
+                <option value="5">40 - 44</option>
+                <option value="6">45 - 49</option>
+                <option value="7">50 - 54</option>
+                <option value="8">55 - 59</option>
+                <option value="9">60 - 64</option>
+                <option value="10">65 - 69</option>
+                <option value="11">70 - 74</option>
+                <option value="12">75 - 79</option>
+                <option value="13">≥ 80</option>
+              </select>
+            </div>
+
+            <!-- BMI -->
+            <div class="mb-3">
+              <label for="bmi" class="form-label">BMI:</label>
+              <input type="number" class="form-control" name="bmi" id="bmi" step="0.01" placeholder="Immetti BMI" required>
+              <a href="#" class="link-success small mt-1 d-block">Calcola il tuo BMI</a>
+            </div>
+
+            <!-- Colesterolo -->
+            <div class="mb-3">
+              <label class="form-label">Colesterolo alto?</label><br>
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="high_col" id="high" value="1">
+                <label class="form-check-label" for="high">Sì</label>
+              </div>
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="high_col" id="low" value="0">
+                <label class="form-check-label" for="low">No</label>
+              </div>
+            </div>
+
+            <!-- Controllo colesterolo -->
+            <div class="mb-3">
+              <label class="form-label">Hai controllato il colesterolo negli ultimi 5 anni?</label><br>
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="col_check" id="check_yes" value="1">
+                <label class="form-check-label" for="check_yes">Sì</label>
+              </div>
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="col_check" id="check_no" value="0">
+                <label class="form-check-label" for="check_no">No</label>
+              </div>
+            </div>
+
+            <!-- Fumo -->
+            <div class="mb-3">
+              <label class="form-label">Hai fumato almeno 5 pacchetti (da 20) di sigarette nella tua vita?</label><br>
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="smoke" id="smoke_yes" value="1">
+                <label class="form-check-label" for="smoke_yes">Sì</label>
+              </div>
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="smoke" id="smoke_no" value="0">
+                <label class="form-check-label" for="smoke_no">No</label>
+              </div>
+            </div>
+
+            <!-- Malattie cardiache -->
+            <div class="mb-3">
+              <label class="form-label">Hai malattie cardiache?</label><br>
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="heart_dis" id="heart_dis1" value="1">
+                <label class="form-check-label" for="heart_dis1">Sì</label>
+              </div>
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="heart_dis" id="heart_dis0" value="0">
+                <label class="form-check-label" for="heart_dis0">No</label>
+              </div>
+            </div>
+
+            <!-- Frutta -->
+            <div class="mb-3">
+              <label class="form-label">Mangi frutta almeno 1 volta/giorno?</label><br>
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="fruits" id="fruits_yes" value="1">
+                <label class="form-check-label" for="fruits_yes">Sì</label>
+              </div>
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="fruits" id="fruits_no" value="0">
+                <label class="form-check-label" for="fruits_no">No</label>
+              </div>
+            </div>
+
+            <!-- Verdura -->
+            <div class="mb-3">
+              <label class="form-label">Mangi verdura almeno 1 volta/giorno?</label><br>
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="veggies" id="veggies_yes" value="1">
+                <label class="form-check-label" for="veggies_yes">Sì</label>
+              </div>
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="veggies" id="veggies_no" value="0">
+                <label class="form-check-label" for="veggies_no">No</label>
+              </div>
+            </div>
+
+            <!-- Alcool -->
+            <div class="mb-3">
+              <label class="form-label">Alcool eccessivo? Almeno 14 drink/sett. per gli uomini e 7/sett. per le donne.</label><br>
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="alchool" id="alchool_yes" value="1">
+                <label class="form-check-label" for="alchool_yes">Sì</label>
+              </div>
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="alchool" id="alchool_no" value="0">
+                <label class="form-check-label" for="alchool_no">No</label>
+              </div>
+            </div>
+
+            <!-- Salute generale -->
+            <div class="mb-3">
+              <label for="gen_health" class="form-label">Salute generale:</label>
+              <select class="form-select" name="gen_health" id="gen_health" required>
+                <option value="" selected disabled>Seleziona livello</option>
+                <option value="1">Eccellente</option>
+                <option value="2">Molto Buono</option>
+                <option value="3">Buono</option>
+                <option value="4">Medio</option>
+                <option value="5">Povero</option>
+              </select>
+            </div>
+
+            <!-- Giorni di malattia -->
+            <div class="mb-3">
+              <label for="illenes" class="form-label">Giorni di malattia/infortunio ultimi 30 giorni:</label>
+              <input type="number" class="form-control" name="illenes" id="illenes" min="0" max="30" placeholder="0-30" required>
+            </div>
+
+            <!-- Difficoltà camminare -->
+            <div class="mb-3">
+              <label class="form-label">Difficoltà a camminare/salire scale?</label><br>
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="walk_diff" id="walk_diff1" value="1">
+                <label class="form-check-label" for="walk_diff1">Sì</label>
+              </div>
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="walk_diff" id="walk_diff0" value="0">
+                <label class="form-check-label" for="walk_diff0">No</label>
+              </div>
+            </div>
+
+            <!-- Pressione alta -->
+            <div class="mb-3">
+              <label class="form-label">Pressione alta?</label><br>
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="high_press" id="high_press1" value="1">
+                <label class="form-check-label" for="high_press1">Sì</label>
+              </div>
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="high_press" id="high_press0" value="0">
+                <label class="form-check-label" for="high_press0">No</label>
+              </div>
+            </div>
+
+            <!-- Azioni finali -->
+            <div class="d-flex justify-content-start mt-4">
+              <button type="submit" class="btn btn-success">Verifica</button>
+            </div>
+
+          </fieldset>
+        </form>
+      </div>
+      <div class="card-footer text-center text-muted">
+        I risultati non devono essere interpretati come diagnosi.
+      </div>
+    </div>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

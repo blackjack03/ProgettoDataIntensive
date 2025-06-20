@@ -1,0 +1,3 @@
+# GitIgnore
+__pycache__
+models
