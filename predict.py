@@ -87,5 +87,6 @@ def predict():
     }
     return predict_impl(D)
 
+
 if __name__=='__main__':
     app()
