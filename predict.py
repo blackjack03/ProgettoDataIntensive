@@ -4,7 +4,6 @@ import tensorflow as tf
 from tensorflow.keras import backend as K
 import joblib
 import numpy as np
-from sklearn.exceptions import InconsistentVersionWarning
 
 
 def recall_m(y_true, y_pred):
